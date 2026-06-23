@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>linear(0,1) Acceleration Test</title>
+<style>
+  :root {
+    --bg: #0d1117;
+    --surface: #161b22;
+    --border: #30363d;
+    --text: #e6edf3;
+    --muted: #8b949e;
+    --accent: #58a6ff;
+    --green: #3fb950;
+    --red: #f85149;
+    --yellow: #d29922;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 2rem 1rem;
+  }
+  h1 {
+    font-size: 1.5rem;
+    margin-bottom: 0.25rem;
+  }
+  .subtitle {
+    color: var(--muted);
+    font-size: 0.875rem;
+    margin-bottom: 1.5rem;
+    text-align: center;
+    max-width: 600px;
+    line-height: 1.5;
+  }
+
+  /* Controls */
+  .controls {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .btn {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 0.5rem 1.25rem;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: background 0.15s, border-color 0.15s;
+  }
+  .btn:hover { border-color: var(--accent); }
+  .btn.active {
+    background: rgba(248, 81, 73, 0.15);
+    border-color: var(--red);
+    color: var(--red);
+  }
+  .status {
+    font-size: 0.8125rem;
+    color: var(--muted);
+    font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  }
+  .status .on { color: var(--red); }
+  .status .off { color: var(--green); }
+
+  /* Test sections */
+  .test-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.25rem;
+    margin-bottom: 1.5rem;
+    width: 100%;
+    max-width: 640px;
+  }
+  .section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 0.75rem;
+  }
+  .section-label {
+    font-size: 1rem;
+    font-weight: 600;
+  }
+  .section-label code {
+    color: var(--accent);
+    font-size: 0.9375rem;
+  }
+  .section-hint {
+    font-size: 0.75rem;
+    color: var(--muted);
+  }
+
+  /* Animation track */
+  .track {
+    position: relative;
+    height: 120px;
+    background: var(--bg);
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+  }
+  .track::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: var(--border);
+    opacity: 0.5;
+  }
+  .box {
+    position: absolute;
+    left: 50%;
+    width: 48px;
+    height: 48px;
+    margin-left: -24px;
+    border-radius: 8px;
+    will-change: transform;
+    /* animation defined per-section below */
+  }
+
+  /* Section 1: plain `linear` — always compositor-accelerated */
+  #box-linear {
+    background: var(--green);
+    animation: bounce 1.5s linear infinite alternate;
+  }
+
+  /* Section 2: linear(0,1) — mathematically identical, but may not be accelerated */
+  #box-linear-fn {
+    background: var(--yellow);
+    animation: bounce 1.5s linear(0, 1) infinite alternate;
+  }
+
+  @keyframes bounce {
+    from { transform: translateY(8px); }
+    to   { transform: translateY(64px); }
+  }
+
+  /* Legend */
+  .legend {
+    display: flex;
+    gap: 1.5rem;
+    margin-bottom: 1rem;
+    font-size: 0.8125rem;
+    color: var(--muted);
+  }
+  .legend-item { display: flex; align-items: center; gap: 0.5rem; }
+  .legend-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 3px;
+  }
+  .legend-dot.green { background: var(--green); }
+  .legend-dot.yellow { background: var(--yellow); }
+
+  /* Info box */
+  .info {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1rem 1.25rem;
+    width: 100%;
+    max-width: 640px;
+    font-size: 0.8125rem;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+  .info strong { color: var(--text); }
+  .info code {
+    background: var(--bg);
+    padding: 0.1rem 0.35rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    color: var(--accent);
+  }
+
+  /* Jank indicator */
+  .jank-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-family: ui-monospace, monospace;
+    font-size: 0.75rem;
+  }
+  .jank-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--muted);
+    transition: background 0.05s;
+  }
+  .jank-dot.janking { background: var(--red); }
+</style>
+</head>
+<body>
+
+<h1>linear(0,1) Compositor Acceleration Test</h1>
+<p class="subtitle">
+  Both boxes run an identical <code>translateY</code> animation. The green one uses
+  <code>linear</code> easing; the yellow one uses <code>linear(0,&nbsp;1)</code> —
+  mathematically identical, but some browsers fail to offload the latter to the compositor.
+  Toggle main-thread jank to see if one stutters while the other stays smooth.
+</p>
+
+<div class="controls">
+  <button class="btn" id="jankBtn">Enable Jank</button>
+  <span class="status" id="jankStatus">
+    Jank: <span class="off">OFF</span>
+  </span>
+  <span class="jank-indicator">
+    <span class="jank-dot" id="jankDot"></span>
+    main thread
+  </span>
+</div>
+
+<div class="legend">
+  <div class="legend-item"><span class="legend-dot green"></span> linear keyword</div>
+  <div class="legend-item"><span class="legend-dot yellow"></span> linear(0,1) function</div>
+</div>
+
+<!-- Section 1: plain linear -->
+<div class="test-section">
+  <div class="section-header">
+    <span class="section-label">Section 1 — <code>animation-timing-function: linear</code></span>
+    <span class="section-hint">should always be smooth ✓</span>
+  </div>
+  <div class="track">
+    <div class="box" id="box-linear"></div>
+  </div>
+</div>
+
+<!-- Section 2: linear(0,1) -->
+<div class="test-section">
+  <div class="section-header">
+    <span class="section-label">Section 2 — <code>animation-timing-function: linear(0, 1)</code></span>
+    <span class="section-hint">may stutter if not accelerated ⚠️</span>
+  </div>
+  <div class="track">
+    <div class="box" id="box-linear-fn"></div>
+  </div>
+</div>
+
+<div class="info">
+  <p><strong>How to use:</strong> Click <strong>Enable Jank</strong> to block the main thread with a
+  spin-lock every 200&nbsp;ms. If your browser compositor-accelerates <code>linear(0,&nbsp;1)</code>,
+  both boxes stay smooth. If it doesn't, the yellow box stutters while the green one keeps gliding.</p>
+  <p style="margin-top:0.5rem"><strong>What's happening:</strong> <code>linear(0,&nbsp;1)</code> produces a
+  straight-line easing identical to the <code>linear</code> keyword. The question is whether the browser's
+  animation optimizer recognizes this equivalence and promotes the animation to the compositor thread
+  (which runs independently of JS on the main thread), or whether it falls back to main-thread animation
+  because it doesn't parse the <code>linear()</code> function as a trivially fast path.</p>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  var jankEnabled = false;
+  var jankBtn = document.getElementById('jankBtn');
+  var jankStatus = document.getElementById('jankStatus');
+  var jankDot = document.getElementById('jankDot');
+  var jankInterval = null;
+
+  jankBtn.addEventListener('click', function () {
+    jankEnabled = !jankEnabled;
+    if (jankEnabled) {
+      jankBtn.textContent = 'Disable Jank';
+      jankBtn.classList.add('active');
+      jankStatus.innerHTML = 'Jank: <span class="on">ON</span>';
+      startJank();
+    } else {
+      jankBtn.textContent = 'Enable Jank';
+      jankBtn.classList.remove('active');
+      jankStatus.innerHTML = 'Jank: <span class="off">OFF</span>';
+      stopJank();
+    }
+  });
+
+  // Jank injection: every 200ms, spin-lock the main thread for ~90ms
+  // This creates periodic main-thread freezes that will stutter any
+  // animation driven on the main thread, while compositor-driven
+  // animations continue smoothly.
+  function startJank() {
+    jankInterval = setInterval(function () {
+      // Flash the indicator dot
+      jankDot.classList.add('janking');
+
+      // Spin-lock for ~90ms (block the main thread)
+      var start = performance.now();
+      while (performance.now() - start < 90) {
+        // tight loop — do nothing, just burn CPU
+      }
+
+      // Clear the indicator after a short delay
+      setTimeout(function () {
+        jankDot.classList.remove('janking');
+      }, 10);
+    }, 200);
+  }
+
+  function stopJank() {
+    if (jankInterval) {
+      clearInterval(jankInterval);
+      jankInterval = null;
+    }
+    jankDot.classList.remove('janking');
+  }
+
+  // Display user agent info for testing reference
+  console.log('UA:', navigator.userAgent);
+})();
+</script>
+
+</body>
+</html>
