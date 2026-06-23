@@ -255,9 +255,10 @@
 </div>
 
 <div class="info">
-  <p><strong>How to use:</strong> Click <strong>Enable Jank</strong> to block the main thread with a
-  spin-lock every 200&nbsp;ms. If your browser compositor-accelerates <code>linear(0,&nbsp;1)</code>,
-  both boxes stay smooth. If it doesn't, the yellow box stutters while the green one keeps gliding.</p>
+  <p><strong>How to use:</strong> Jank is <strong>on by default</strong> — the main thread is
+  spin-locked for ~500&nbsp;ms every 500&nbsp;ms. If your browser compositor-accelerates
+  <code>linear(0,&nbsp;1)</code>, both boxes stay smooth. If it doesn't, the yellow box stutters
+  while the green one keeps gliding. Click <strong>Disable Jank</strong> to compare with a clean main thread.</p>
   <p style="margin-top:0.5rem"><strong>What's happening:</strong> <code>linear(0,&nbsp;1)</code> produces a
   straight-line easing identical to the <code>linear</code> keyword. The question is whether the browser's
   animation optimizer recognizes this equivalence and promotes the animation to the compositor thread
@@ -290,8 +291,8 @@
     }
   });
 
-  // Jank injection: every 200ms, spin-lock the main thread for ~90ms
-  // This creates periodic main-thread freezes that will stutter any
+  // Jank injection: every 500ms, spin-lock the main thread for ~500ms
+  // This creates heavy periodic main-thread freezes that will stutter any
   // animation driven on the main thread, while compositor-driven
   // animations continue smoothly.
   function startJank() {
@@ -299,9 +300,9 @@
       // Flash the indicator dot
       jankDot.classList.add('janking');
 
-      // Spin-lock for ~90ms (block the main thread)
+      // Spin-lock for ~500ms (block the main thread)
       var start = performance.now();
-      while (performance.now() - start < 90) {
+      while (performance.now() - start < 500) {
         // tight loop — do nothing, just burn CPU
       }
 
@@ -309,7 +310,7 @@
       setTimeout(function () {
         jankDot.classList.remove('janking');
       }, 10);
-    }, 200);
+    }, 500);
   }
 
   function stopJank() {
@@ -322,6 +323,13 @@
 
   // Display user agent info for testing reference
   console.log('UA:', navigator.userAgent);
+
+  // Enable jank by default
+  jankEnabled = true;
+  jankBtn.textContent = 'Disable Jank';
+  jankBtn.classList.add('active');
+  jankStatus.innerHTML = 'Jank: <span class="on">ON</span>';
+  startJank();
 })();
 </script>
 
